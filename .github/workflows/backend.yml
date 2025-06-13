@@ -1,0 +1,47 @@
+name: Backend CI/CD
+
+on:
+  push:
+    paths:
+      - 'back-end/**'
+      - '.github/workflows/backend.yml'
+  pull_request:
+    paths:
+      - 'back-end/**'
+
+jobs:
+  backend-check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: back-end
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Lint Check (Optional)
+        run: |
+          if [ -f .eslintrc.js ]; then
+            npm run lint
+          else
+            echo "No linting config found"
+          fi
+
+      - name: Run tests (Optional)
+        run: |
+          if [ -f ./test ]; then
+            npm test
+          else
+            echo "No tests found"
+          fi
+
+      - name: Deploy (Optional - if using CLI or webhook)
+        run: echo "Deploy handled by Render or Railway dashboard"
