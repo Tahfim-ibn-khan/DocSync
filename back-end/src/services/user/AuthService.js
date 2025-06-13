@@ -5,9 +5,25 @@ const UserModel = require("../../models/Users/UserModel");
 exports.RegisterService = async (req) => {
   const { fullName, avatar, email, password } = req.body;
 
+  // Input validation
+  if (!fullName || !email || !password) {
+    throw new Error("Full name, email, and password are required");
+  }
+
+  const emailRegex = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/;
+  if (!emailRegex.test(email)) {
+    throw new Error("Invalid email format");
+  }
+
+  if (password.length < 6) {
+    throw new Error("Password must be at least 6 characters long");
+  }
+
   // Check if email already exists
   const existingUser = await UserModel.findOne({ email });
-  if (existingUser) throw new Error("Email already registered");
+  if (existingUser) {
+    throw new Error("Email already registered");
+  }
 
   // Hash password
   const hashed = await bcrypt.hash(password, 10);
@@ -20,7 +36,13 @@ exports.RegisterService = async (req) => {
     password: hashed
   });
 
-  return { status: "success", data: user };
+  const { password: _, ...safeUser } = user.toObject();
+
+  return {
+    status: "success",
+    message: "User registered successfully",
+    data: safeUser
+  };
 };
 
 exports.LoginService = async (req) => {
