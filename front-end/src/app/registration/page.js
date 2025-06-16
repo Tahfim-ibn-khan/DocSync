@@ -3,8 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import useRedirectIfLoggedIn from "@/hooks/useRedirectIfLoggedIn";
+
 
 export default function RegisterPage() {
+  useRedirectIfLoggedIn();
   const router = useRouter();
   const [formData, setFormData] = useState({
     fullName: "",

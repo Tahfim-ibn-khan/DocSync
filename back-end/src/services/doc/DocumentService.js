@@ -29,10 +29,18 @@ exports.GetSharedDocsService = async (req) => {
 
   const docs = await DocumentModel.find({
     sharedWith: { $elemMatch: { user: userId } }
-  }).sort({ updatedAt: -1 });
+  })
+    .populate("owner", "fullName") // add this
+    .sort({ updatedAt: -1 });
 
-  return { status: "success", data: docs };
+  const enhancedDocs = docs.map(doc => ({
+    ...doc._doc,
+    ownerName: doc.owner?.fullName || "Unknown"
+  }));
+
+  return { status: "success", data: enhancedDocs };
 };
+
 
 exports.UpdateDocService = async (req) => {
   const docId = req.params.id;
@@ -77,6 +85,10 @@ exports.ShareDocService = async (req) => {
   const targetUser = await UserModel.findOne({ email });
   if (!targetUser) throw new Error("Target user not found");
 
+  if (targetUser._id.toString() === ownerId.toString()) {
+    throw new Error("You cannot share the document with yourself.");
+  }
+
   const doc = await DocumentModel.findOne({ _id: docId, owner: ownerId });
   if (!doc) throw new Error("Document not found or unauthorized");
 
@@ -91,6 +103,7 @@ exports.ShareDocService = async (req) => {
 
   return { status: "success", message: "Document shared" };
 };
+
 
 exports.GetDocByIdService = async (docId, user) => {
   if (!ObjectId.isValid(docId)) {

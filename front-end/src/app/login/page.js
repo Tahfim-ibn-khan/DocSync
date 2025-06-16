@@ -3,40 +3,42 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import useRedirectIfLoggedIn from "@/hooks/useRedirectIfLoggedIn";
+
 
 export default function LoginPage() {
+  useRedirectIfLoggedIn();
   const router = useRouter();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-  
-    try {
-      // res is already parsed JSON because api() returns data
-      const data = await api("/login", {
-        method: "POST",
-        body: JSON.stringify(formData),
-      });
-  
-      if (data.status === "success") {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.data));
-        router.push("/dashboard");
-      } else {
-        setError(data.message || "Login failed");
-      }
-    } catch (err) {
-      console.error("Login error:", err);
-      setError(err.message || "Server error");
+  e.preventDefault();
+  setLoading(true);
+  setError("");
+
+  try {
+    const res = await api("/login", {
+      method: "POST",
+      body: JSON.stringify(formData)
+    });
+
+    if (res.status === "success") {
+  localStorage.setItem("token", res.token);
+  localStorage.setItem("user", JSON.stringify(res.data));
+  router.push("/dashboard");
+  window.location.reload();
+}
+ else {
+      setError(res.message || "Login failed");
     }
-  
-    setLoading(false);
-  };
-  
+  } catch (err) {
+    setError(err.message || "Server error");
+  }
+
+  setLoading(false);
+}; 
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
@@ -86,4 +88,4 @@ export default function LoginPage() {
       </div>
     </div>
   );
-}
+};
