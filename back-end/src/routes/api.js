@@ -20,6 +20,7 @@ router.get("/profile", AuthVerify, (req, res) => {
 router.post("/docs", AuthVerify, DocController.CreateDoc);
 router.get("/docs", AuthVerify, DocController.GetMyDocs);
 router.get("/docs/shared", AuthVerify, DocController.GetSharedDocs);
+router.get("/docs/:id", AuthVerify, DocController.GetDocById);
 router.put("/docs/:id", AuthVerify, DocController.UpdateDoc);
 router.delete("/docs/:id", AuthVerify, DocController.DeleteDoc);
 router.post("/docs/:id/share", AuthVerify, DocController.ShareDoc);

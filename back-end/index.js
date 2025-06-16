@@ -37,44 +37,52 @@ io.on('connection', (socket) => {
 
   // Join a document room and announce presence
   socket.on("join-doc", ({ docId, user }) => {
+    if (!docId || !user?.id) return;
+
     socket.join(docId);
 
-    // Track user presence
+    // Initialize room if not exists
     if (!docPresenceMap.has(docId)) {
       docPresenceMap.set(docId, new Set());
     }
 
-    const userSet = docPresenceMap.get(docId);
-    userSet.add(JSON.stringify({
+    const userInfo = JSON.stringify({
       id: user.id,
       name: user.fullName,
-      avatar: user.avatar
-    }));
-    docPresenceMap.set(docId, userSet);
+      avatar: user.avatar,
+    });
 
-    // Emit current presence to all users in the room
-    const usersInRoom = Array.from(userSet).map(u => JSON.parse(u));
+    docPresenceMap.get(docId).add(userInfo);
+
+    // Emit updated presence list
+    const usersInRoom = Array.from(docPresenceMap.get(docId)).map(JSON.parse);
     io.to(docId).emit("presence-update", usersInRoom);
 
     console.log(`${user.fullName} joined document: ${docId}`);
   });
 
-  // Broadcast content changes
+  // Broadcast content changes to other users
   socket.on("send-changes", ({ docId, delta }) => {
-    socket.to(docId).emit("receive-changes", delta);
+    if (docId && delta) {
+      socket.to(docId).emit("receive-changes", delta);
+    }
   });
 
-  // Leave room and update presence
+  // Leave document room and update presence
   socket.on("leave-doc", ({ docId, user }) => {
+    if (!docId || !user?.id) return;
+
     socket.leave(docId);
 
-    if (docPresenceMap.has(docId)) {
-      const userSet = docPresenceMap.get(docId);
-      userSet.delete(JSON.stringify({
-        id: user.id,
-        name: user.fullName,
-        avatar: user.avatar
-      }));
+    const userInfo = JSON.stringify({
+      id: user.id,
+      name: user.fullName,
+      avatar: user.avatar,
+    });
+
+    const userSet = docPresenceMap.get(docId);
+    if (userSet) {
+      userSet.delete(userInfo);
 
       if (userSet.size === 0) {
         docPresenceMap.delete(docId);
@@ -82,7 +90,7 @@ io.on('connection', (socket) => {
         docPresenceMap.set(docId, userSet);
       }
 
-      const usersInRoom = Array.from(userSet).map(u => JSON.parse(u));
+      const usersInRoom = Array.from(userSet).map(JSON.parse);
       io.to(docId).emit("presence-update", usersInRoom);
     }
 
@@ -91,8 +99,8 @@ io.on('connection', (socket) => {
 
   socket.on("disconnect", () => {
     console.log(`Socket disconnected: ${socket.id}`);
+    // Optional: implement cleanup if tracking users per socket
   });
 });
 
 global.io = io;
-
